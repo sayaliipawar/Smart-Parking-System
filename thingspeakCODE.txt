@@ -1,0 +1,240 @@
+#include <Servo.h>
+Servo myservo;  // create servo object to control a servo
+// twelve servo objects can be created on most boards
+int pos = 0;    // variable to store the servo position
+int obstaclePin = 12;  // This is our input pin
+int hasObstacle = HIGH;  // HIGH MEANS NO OBSTACLE
+
+//uv
+int count=0;
+int trigger1=2;
+int echo1=3;  
+int trigger2=4;
+int echo2=5;
+int trigger3=6;
+int echo3=7;
+int trigger4=8;
+int echo4=9;
+long time1=0;
+long dist=0;
+int ledPin = 13;      // LED+
+int beep=10;
+int arr[4];
+int i;
+long dist1,dist2,dist3,dist4;
+String apiKey = "9A1YS0AQ3I2MW3XY";  //Change this key to your "Write API key"
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(9600);      // PC Arduino Serial Monitor
+  Serial1.begin(115200);   // Arduino to ESP01 Communication
+            
+  pinMode(obstaclePin, INPUT);
+  myservo.attach(11);  // attaches the servo on pin 9 to the servo object
+  
+  pinMode(trigger1,OUTPUT);
+  pinMode(echo1,INPUT);
+  pinMode(trigger2,OUTPUT);
+  pinMode(echo2,INPUT);
+  pinMode(trigger3,OUTPUT);
+  pinMode(echo3,INPUT);
+  pinMode(trigger4,OUTPUT);
+  pinMode(echo4,INPUT);
+  pinMode(beep,OUTPUT);
+  connectWiFi();                        //To connect Wifi
+}
+
+void loop() {
+  count=0;
+  // put your main code here, to run repeatedly:
+  gate();
+  uv(trigger1,echo1);
+  dist1=dist;
+  Serial.print(" dist1-");
+  Serial.print(dist);
+  if(dist1<=10)
+  {
+    arr[0]=1; 
+  }
+  else
+  {
+  arr[0]=0;
+  }
+  gate();
+  uv(trigger2,echo2);
+  dist2=dist;
+  Serial.print(" dist2-");
+  Serial.print(dist);
+  if(dist2<=10)
+  {
+    arr[1]=1;
+  }
+  else
+  {
+  arr[1]=0;
+  }
+  gate();
+  uv(trigger3,echo3);
+  dist3=dist;
+  Serial.print(" dist3-");
+  Serial.print(dist3);
+  if(dist3<=10)
+  {
+    arr[2]=1;
+  }
+  else
+  {
+  arr[2]=0;
+  }
+  gate();
+  uv(trigger4,echo4);
+  dist4=dist;
+  Serial.print(" dist4-");
+  Serial.print(dist4);
+  if(dist4<=10)
+  {
+    arr[3]=1;
+  }
+  else{
+  arr[3]=0;
+ 
+  }
+  //if((dist1<=2 || dist2<=2 || dist3<=2 || dist4<=2)||(dist1<=10 && dist1>=6)||(dist2<=10&&dist2>=6) ||(dist3<=10 && dist3>=6)||(dist4<=13 && dist4>=6))
+  if((dist1<=10 && dist1>=6)||(dist2<=10&&dist2>=6) ||(dist3<=10 && dist3>=6)||(dist4<=10 && dist4>=6))
+  {
+    digitalWrite(beep,HIGH);   
+  }
+  else{
+    digitalWrite(beep,LOW);
+    }
+   Serial.print("Empty : ");
+   for(i=0;i<4;i++)
+   {
+    if(arr[i]==0)
+    {
+      Serial.print(i+1);
+      Serial.print(" ");
+    }
+   }
+   Serial.println();
+   Serial.println("WAIT : DATA IS GETTING SENT TO CLOUD");
+   for(i=0;i<4;i++)
+   {
+    if(arr[i]==0){
+      Serial.print(i*100);
+      int tempc=i*100;
+      digitalWrite(ledPin, HIGH); // LED ON
+      delay(500);                 // wait for 500 mSec
+      digitalWrite(ledPin, LOW);  // LED OFF
+    
+      Serial1.println("AT+CIPMUX=0\r\n");      // To Set MUX = 0
+      delay(2000);                             // Wait for 2 sec
+    
+      // TCP connection 
+      String cmd = "AT+CIPSTART=\"TCP\",\"";   // TCP connection with https://thingspeak.com server
+      cmd += "184.106.153.149";                // IP addr of api.thingspeak.com
+      cmd += "\",80\r\n\r\n";                  // Port No. = 80
+    
+      Serial1.println(cmd);                    // Display above Command on PC
+      Serial.println(cmd);                     // Send above command to Rx1, Tx1
+    
+      delay(3000);                            // Wait for 20 Sec
+    
+      if(Serial1.find("ERROR"))                // If returns error in TCP connection
+      { 
+        Serial.println("AT+CIPSTART error");   // Display error msg to PC
+        //return; 
+      }
+    
+      // prepare GET string 
+      String getStr = "GET /update?api_key=";   
+      getStr += apiKey;
+      getStr +="&field1=";
+      getStr += tempc; 
+      getStr += "\r\n\r\n"; 
+    
+      Serial.println(getStr);                 // Display GET String on PC
+    
+      cmd = "AT+CIPSEND=";                    // send data length 
+      cmd += String(getStr.length());
+      cmd+="\r\n";
+    
+      Serial.println(cmd);                   // Display Data length on PC
+      Serial1.println(cmd);                  // Send Data length command to Tx1, Rx1
+      
+      delay(1000);                          // wait for 20sec
+    
+      if(Serial1.find(">"))                    // If prompt opens //verify connection with cloud
+      {
+        Serial.println("connected to Cloud");  // Display confirmation msg to PC
+        Serial1.print(getStr);                 // Send GET String to Rx1, Tx1
+      }
+      else
+      { 
+        Serial1.println("AT+CIPCLOSE\r\n");    // Send Close Connection command to Rx1, Tx1
+        Serial.println("AT+CIPCLOSE");         // Display Connection closed command on PC
+      } 
+      
+      // thingspeak free version needs 16 sec delay between updates 
+      delay(5000);                            // wait for 16sec
+
+    }
+    
+    Serial.print(" ");
+   }
+  
+     
+}
+void gate()
+{
+  hasObstacle = digitalRead(obstaclePin); //Reads the output of the obstacle sensor from the 7th PIN of the Digital section of the arduino
+  if (hasObstacle == LOW) //LOW means something is ahead, so illuminates the 13th Port connected LED
+  {
+    myservo.write(90);
+    delay(2000);
+    myservo.write(0);
+
+  }
+  else
+  {
+    myservo.write(0);
+  }
+}
+void uv(int trigger,int echo)
+{
+  digitalWrite(trigger,LOW);
+  delay(5);
+  digitalWrite(trigger,HIGH);
+  delay(10);
+  digitalWrite(trigger,LOW);
+  time1=pulseIn(echo,HIGH);
+  dist=(time1/2)/29.1; 
+}
+boolean connectWiFi() {               // Connect to Wifi Function
+  Serial1.println("AT+CWMODE=1\r\n"); // Setting Mode = 1 
+  delay(100);                         // wait for 100 mSec
+
+  String cmd = "AT+CWJAP=\"";         // Connect to WiFi
+  cmd += "namrata";                   // ssid_name
+  cmd += "\",\"";
+  cmd += "namu1234";                // password
+  cmd += "\"\r\n";              
+  
+  Serial.println(cmd);                // Display Connect Wifi Command on PC
+  Serial1.println(cmd);               // send Connect WiFi command to Rx1, Tx1 
+  
+  delay(7000);                       // wait for 10 sec
+
+  Serial1.println("AT+CWJAP?");       // Verify Connected WiFi
+
+  if(Serial1.find("+CWJAP"))        
+  {
+    Serial.println("OK, Connected to WiFi.");         // Display Confirmation msg on PC
+    return true;
+  }
+  else
+  {
+    Serial.println("Can not connect to the WiFi.");   // Display Error msg on PC
+    return false;
+  }
+}
+  
