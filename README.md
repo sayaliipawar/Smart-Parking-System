@@ -1,5 +1,5 @@
 # Smart-Parking-System
-Smart Parking System is an IoT based prototype that helps monitoring parking slots.
+Smart Parking System is an IoT based prototype that helps monitoring parking slots.</br></br>
 **Description:**</br>
 1)The Smart Parking System using ThingSpeak provides an efficient way of parking system to the people who frequently visit shopping malls where finding a correct parking slot is difficult.</br>
 2)The Smart Parking System simplifies the tedious job of finding the space before entering into a parking area.</br>
@@ -20,5 +20,7 @@ Arduino IDE, Thingspeak</br></br>
 ![](ScreenShots/Picture.jpg)</br></br>
 ![](ScreenShots/Picture2.jpg)</br></br>
 ![](ScreenShots/picture3.jpg)</br></br>
+## Authors
+- [Sayali Pawar](https://github.com/sayaliipawar)
 
 
